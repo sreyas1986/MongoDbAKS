@@ -1,7 +1,8 @@
 ﻿
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 namespace MongoDbAKS
 {
     public class ProductService : IProductService
@@ -13,19 +14,20 @@ namespace MongoDbAKS
             var mongoDatabase = mongoClient.GetDatabase(productdbsettings.Value.DataBaseName);
             productCollection = mongoDatabase.GetCollection<ProductDetails>(productdbsettings.Value.ProductCollectionName);
         }
-        public Task AddProductAsync(ProductDetails productDetails)
+        public async Task AddProductAsync(ProductDetails productDetails)
         {
-            throw new NotImplementedException();
+            await productCollection.InsertOneAsync(productDetails);
         }
 
-        public Task DeleteProductAsync(string productId)
+        public async Task DeleteProductAsync(string productId)
         {
-            throw new NotImplementedException();
+
+            await productCollection.DeleteOneAsync(x => x.Id == productId);
         }
 
-        public  Task<ProductDetails> GetProductDetailByIdAsync(string productId)
+        public async Task<ProductDetails> GetProductDetailByIdAsync(string productId)
         {
-            throw new NotImplementedException();
+            return await productCollection.Find(x => x.Id == productId).FirstOrDefaultAsync();
         }
 
         public async Task<List<ProductDetails>> ProductListAsync()
@@ -33,9 +35,9 @@ namespace MongoDbAKS
             return await productCollection.Find(_ => true).ToListAsync();
         }
 
-        public Task UpdateProductAsync(string productId, ProductDetails productDetails)
+        public async Task UpdateProductAsync(string productId, ProductDetails productDetails)
         {
-            throw new NotImplementedException();
+            await productCollection.ReplaceOneAsync(x => x.Id == productId, productDetails);
         }
     }
 }
