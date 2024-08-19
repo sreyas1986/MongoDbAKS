@@ -17,6 +17,18 @@ namespace MongoDbAKS
         public async Task AddProductAsync(ProductDetails productDetails)
         {
             await productCollection.InsertOneAsync(productDetails);
+            
+        }
+
+        public async Task AddProductsAsync(IList <ProductDetails> productDetails) {
+
+            var bulkOps = new List<WriteModel<ProductDetails>>();
+            foreach (var product in productDetails)
+            {
+                var insertOne = new InsertOneModel<ProductDetails>(product);
+                bulkOps.Add(insertOne);
+            }
+            await productCollection.BulkWriteAsync(bulkOps);
         }
 
         public async Task DeleteProductAsync(string productId)

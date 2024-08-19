@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-
+using System.Data;
+using System.IO;
+using ExcelDataReader;
 namespace MongoDbAKS.Controllers
 {
     [Route("api/[controller]")]
@@ -59,7 +61,60 @@ namespace MongoDbAKS.Controllers
             return Ok();
         }
 
+        [HttpPost("upload")]
+        public async Task<IActionResult>  Upload(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
 
+            DataSet dataSet;
+            using (var stream = new MemoryStream())
+            {
+                file.CopyTo(stream);
+                stream.Position = 0;
+
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                {
+                    dataSet = reader.AsDataSet(new ExcelDataSetConfiguration()
+                    {
+                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                        {
+                            UseHeaderRow = true
+                        }
+                    });
+                }
+            }
+
+            var dataTable = dataSet.Tables[0];
+            var result = new List<Dictionary<string, object>>();
+
+            var productDet = new List<ProductDetails>();
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                try
+                {
+
+                
+                var productDetail = new ProductDetails();
+                productDetail.Id = Convert.ToString(row[0]);
+                productDetail.ProductName = Convert.ToString(row[1]);
+                productDetail.ProductDescription = Convert.ToString(row[2]);
+                productDetail.ProductPrice = Convert.ToInt16(row[3].ToString());
+                productDetail.ProductStock = Convert.ToInt16(row[4].ToString());
+                productDet.Add(productDetail);
+                }
+                catch (Exception ex)
+                {
+
+                    throw ex;
+                }
+               
+            }
+            await productService.AddProductsAsync(productDet);
+            return CreatedAtAction(nameof(GetProduct),null);
+        }
 
     }
 }
